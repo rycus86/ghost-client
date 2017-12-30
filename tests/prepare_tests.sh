@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # cleanup
-docker rm -f ghost-testing > /dev/null
-rm -rf `dirname $0`/ghost-db
+docker rm -f ghost-testing      > /dev/null 2>&1
+rm -rf `dirname $0`/ghost-db    > /dev/null 2>&1
 
 GHOST_VERSION=${1:-1}
 

@@ -60,37 +60,49 @@ class SessionTest(GhostTestCase):
         self.assertGreater(len(client.posts.list(status='all')), 0)
 
     def test_version(self):
-        self.assertEqual('1', self.ghost.version)
+        client = self.new_client(version='auto')
 
-        self.login()
+        try:
+            self.assertEqual('1', client.version)
 
-        self.assertNotEqual('1', self.ghost.version)
+            self.login(client)
+
+            self.assertNotEqual('1', client.version)
+
+        finally:
+            client.logout()
 
     def test_version_caching(self):
-        counters = dict()
+        client = self.new_client(version='auto')
 
-        _exec_get = self.ghost.execute_get
+        try:
+            counters = dict()
 
-        def counting_get(resource, *args, **kwargs):
-            if resource not in counters:
-                counters[resource] = 1
-            else:
-                counters[resource] += 1
+            _exec_get = client.execute_get
 
-            return _exec_get(resource, *args, **kwargs)
+            def counting_get(resource, *args, **kwargs):
+                if resource not in counters:
+                    counters[resource] = 1
+                else:
+                    counters[resource] += 1
 
-        self.ghost.execute_get = counting_get
+                return _exec_get(resource, *args, **kwargs)
 
-        for _ in range(3):
-            self.assertEqual('1', self.ghost.version)
+            client.execute_get = counting_get
 
-        self.assertEqual(counters['configuration/about/'], 3)
+            for _ in range(3):
+                self.assertEqual('1', client.version)
 
-        counters.clear()
+            self.assertEqual(counters['configuration/about/'], 3)
 
-        self.login()
+            counters.clear()
 
-        for _ in range(3):
-            self.assertNotEqual('1', self.ghost.version)
+            self.login(client)
 
-        self.assertEqual(counters['configuration/about/'], 1)
+            for _ in range(3):
+                self.assertNotEqual('1', client.version)
+
+            self.assertEqual(counters['configuration/about/'], 1)
+
+        finally:
+            client.logout()

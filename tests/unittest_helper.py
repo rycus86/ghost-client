@@ -26,13 +26,13 @@ class GhostTestCase(unittest.TestCase):
             'No "client" was set up (use "new_client" or "new_logged_in_client")'
         )
 
-    def new_client(self):
+    def new_client(self, version=GHOST_VERSION):
         return Ghost.from_sqlite(
-            self._find_database(), self.GHOST_BASE_URL, version=self.GHOST_VERSION
+            self._find_database(), self.GHOST_BASE_URL, version=version
         )
 
-    def new_logged_in_client(self):
-        client = self.new_client()
+    def new_logged_in_client(self, version=GHOST_VERSION):
+        client = self.new_client(version=version)
         self.login(client)
         return client
 
