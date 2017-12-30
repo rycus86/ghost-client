@@ -1,0 +1,4 @@
+.coverage
+.idea/
+tests/ghost-db/
+*.pyc

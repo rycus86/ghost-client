@@ -1,0 +1,16 @@
+language: python
+sudo: true
+python:
+- '3.6'
+- '2.7'
+
+install: skip
+script:
+  - pip install nose2 coverage
+  - cd tests && ./prepare_tests.sh $GHOST_VERSION
+  - nose2 -v -C --coverage-report term-missing
+
+env:
+  matrix:
+  - GHOST_VERSION=1
+  - GHOST_VERSION=0
