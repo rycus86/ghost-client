@@ -105,4 +105,4 @@ class TagTests(GhostTestCase):
         self.assertIsNone(last.next_page())
 
     def test_invalid_tag(self):
-        self.assertRaises(GhostException, self.ghost.tags.create, uuid='xyz', name='Invalid Tag')
+        self.assertRaises(GhostException, self.ghost.tags.create, uuid='xyz', created_at='xyz', name='Invalid Tag')
