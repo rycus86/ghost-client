@@ -21,8 +21,11 @@ class Ghost(object):
             'http://localhost:2368'
         )
 
-        # or to use the public API only
-        ghost = Ghost('http://localhost:2368'
+        # or to use a specific client ID and secret
+        ghost = Ghost(
+            'http://localhost:2368',
+            client_id='ghost-admin', client_secret='secret_key'
+        )
 
         # log in
         ghost.login('username', 'password')
