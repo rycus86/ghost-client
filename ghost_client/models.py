@@ -13,6 +13,13 @@ class Post(Model):
     def __getattr__(self, item):
         if item == 'markdown':
             return self._get_markdown()
+
+        elif item == 'tags' and 'tags' in self:
+            return list(map(Model, self['tags']))
+
+        elif item == 'author':
+            return Model(self['author'])
+
         else:
             return super(Post, self).__getattr__(item)
 

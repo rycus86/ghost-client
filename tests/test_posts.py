@@ -35,6 +35,15 @@ class PostTests(GhostTestCase):
         for text in ('Intro', 'Section', 'Body content'):
             self.assertIn(text, stored.html)
 
+    def test_delete_post(self):
+        post = self.ghost.posts.create(title='Sample Post to Delete')
+
+        self.assertIn({'id': post.id}, self.ghost.posts.list(fields='id', status='all'))
+
+        self.ghost.posts.delete(post.id)
+
+        self.assertNotIn({'id': post.id}, self.ghost.posts.list(fields='id', status='all'))
+
     def test_publish(self):
         post = self.create_post(title='Sample to publish')
 

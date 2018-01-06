@@ -14,10 +14,18 @@ class GhostTestCase(unittest.TestCase):
         self.ghost = self._setup_client()
 
         self._posts_to_delete = list()
+        self._tags_to_delete = list()
+        self._users_to_delete = list()
 
     def tearDown(self):
         for post_id in self._posts_to_delete:
             self.ghost.posts.delete(post_id)
+
+        for tag_id in self._tags_to_delete:
+            self.ghost.tags.delete(tag_id)
+
+        for user_id in self._users_to_delete:
+            self.ghost.users.delete(user_id)
 
         self.ghost.logout()
 
@@ -69,3 +77,19 @@ class GhostTestCase(unittest.TestCase):
         post = client.posts.create(**kwargs)
         self._posts_to_delete.append(post.id)
         return post
+
+    def create_tag(self, client=None, **kwargs):
+        if client is None:
+            client = self.ghost
+
+        tag = client.tags.create(**kwargs)
+        self._tags_to_delete.append(tag.id)
+        return tag
+
+    def create_user(self, client=None, **kwargs):
+        if client is None:
+            client = self.ghost
+
+        user = client.users.create(**kwargs)
+        self._users_to_delete.append(user.id)
+        return user
