@@ -133,3 +133,6 @@ class PostTests(GhostTestCase):
 
     def test_invalid_post(self):
         self.assertRaises(GhostException, self.ghost.posts.create, uuid='xyz')
+
+    def test_invalid_get(self):
+        self.assertRaises(GhostException, self.ghost.posts.get, title='Without ID or Slug')

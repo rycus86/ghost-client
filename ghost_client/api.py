@@ -3,16 +3,109 @@ import requests
 
 from .models import Controller, PostController
 from .helpers import refresh_session_if_necessary
+from .errors import GhostException
 
 
 class Ghost(object):
+    """
+    API client for the Ghost REST endpoints.
+    See https://api.ghost.org/ for the available parameters.
+
+    Sample usage:
+
+        from ghost_client import Ghost
+
+        # to read the client ID and secret from the database
+        ghost = Ghost.from_sqlite(
+            '/var/lib/ghost/content/data/ghost.db',
+            'http://localhost:2368'
+        )
+
+        # or to use the public API only
+        ghost = Ghost('http://localhost:2368'
+
+        # log in
+        ghost.login('username', 'password')
+
+        # print the server's version
+        print(ghost.version)
+
+        # create a new tag
+        tag = ghost.tags.create(name='API sample')
+
+        # create a new post using it
+        post = ghost.posts.create(
+            title='Example post', slug='custom-slug',
+            markdown='',  # yes, even on v1.+
+            custom_excerpt='An example post created from Python',
+            tags=[tag]
+        )
+
+        # list posts, tags and users
+        posts = ghost.posts.list(
+            status='all',
+            fields=('id', 'title', 'slug'),
+            formats=('html', 'mobiledoc', 'plaintext'),
+        )
+        tags = ghost.tags.list(fields='name', limit='all')
+        users = ghost.users.list(include='count.posts')
+
+        # use pagination
+        while posts:
+            for post in posts:
+                print(post)
+                posts = posts.next_page()
+
+        print(posts.total)
+        print(posts.pages)
+
+        # update a post & tag
+        updated_post = ghost.posts.update(post.id, title='Updated title')
+        updated_tag = ghost.tags.update(tag.id, name='Updated tag')
+
+        # note: creating, updating and deleting a user is not allowed by the API
+
+        # access fields as properties
+        print(post.title)
+        print(post.markdown)     # needs formats='mobiledoc'
+        print(post.author.name)  # needs include='author'
+
+        # delete a post & tag
+        ghost.posts.delete(post.id)
+        ghost.tags.delete(tag.id)
+
+        # log out
+        ghost.logout()
+
+    The logged in credentials will be saved in memory and
+    on HTTP 401 errors the client will attempt
+    to re-authenticate once automatically.
+
+    Responses are wrapped in `models.ModelList` and `models.Model`
+    types to allow pagination and retrieving fields as properties.
+    """
+
     DEFAULT_VERSION = '1'
+    """
+    The default version to report when cannot be fetched.
+    """
 
     def __init__(
             self, base_url, version='auto',
             client_id=None, client_secret=None,
             access_token=None, refresh_token=None
     ):
+        """
+        Creates a new Ghost API client.
+
+        :param base_url: The base url of the server
+        :param version: The server version to use (default: `auto`)
+        :param client_id: Self-supplied client ID (optional)
+        :param client_secret: Self-supplied client secret (optional)
+        :param access_token: Self-supplied access token (optional)
+        :param refresh_token: Self-supplied refresh token (optional)
+        """
+
         self.base_url = '%s/ghost/api/v0.1' % base_url
         self._version = version
 
@@ -36,6 +129,17 @@ class Ghost(object):
 
     @classmethod
     def from_sqlite(cls, database_path, base_url, version='auto', client_id='ghost-admin'):
+        """
+        Initialize a new Ghost API client,
+        reading the client ID and secret from the SQlite database.
+
+        :param database_path: The path to the database file.
+        :param base_url: The base url of the server
+        :param version: The server version to use (default: `auto`)
+        :param client_id: The client ID to look for in the database
+        :return: A new Ghost API client instance
+        """
+
         import os
         import sqlite3
 
@@ -66,6 +170,11 @@ class Ghost(object):
 
     @property
     def version(self):
+        """
+        :return: The version of the server when initialized as 'auto',
+            otherwise the version passed in at initialization
+        """
+
         if self._version != 'auto':
             return self._version
 
@@ -79,6 +188,14 @@ class Ghost(object):
         return self._version
 
     def login(self, username, password):
+        """
+        Authenticate with the server.
+
+        :param username: The username of an existing user
+        :param password: The password for the user
+        :return: The authentication response from the REST endpoint
+        """
+
         data = self._authenticate(
             grant_type='password',
             username=username,
@@ -93,7 +210,18 @@ class Ghost(object):
         return data
 
     def refresh_session(self):
+        """
+        Re-authenticate using the refresh token if available.
+        Otherwise log in using the username and password
+        if it was used to authenticate initially.
+
+        :return: The authentication response or `None` if not available
+        """
+
         if not self._refresh_token:
+            if self._username and self._password:
+                return self.login(self._username, self._password)
+
             return
 
         return self._authenticate(
@@ -119,6 +247,10 @@ class Ghost(object):
         return data
 
     def revoke_access_token(self):
+        """
+        Revoke the access token currently in use.
+        """
+
         if not self._access_token:
             return
 
@@ -127,7 +259,13 @@ class Ghost(object):
             token=self._access_token
         ))
 
+        self._access_token = None
+
     def revoke_refresh_token(self):
+        """
+        Revoke the refresh token currently active.
+        """
+
         if not self._refresh_token:
             return
 
@@ -136,12 +274,30 @@ class Ghost(object):
             token=self._refresh_token
         ))
 
+        self._refresh_token = None
+
     def logout(self):
+        """
+        Log out, revoking the access tokens
+        and forgetting the login details if they were given.
+        """
+
         self.revoke_refresh_token()
         self.revoke_access_token()
 
+        self._username, self._password = None, None
+
     @refresh_session_if_necessary
     def execute_get(self, resource, **kwargs):
+        """
+        Execute an HTTP GET request against the API endpoints.
+        This method is meant for internal use.
+
+        :param resource: The last part of the URI
+        :param kwargs: Additional query parameters (and optionally headers)
+        :return: The HTTP response as JSON or `GhostException` if unsuccessful
+        """
+
         url = '%s/%s' % (self.base_url, resource)
 
         headers = kwargs.pop('headers', dict())
@@ -178,12 +334,39 @@ class Ghost(object):
         return response.json()
 
     def execute_post(self, resource, **kwargs):
+        """
+        Execute an HTTP POST request against the API endpoints.
+        This method is meant for internal use.
+
+        :param resource: The last part of the URI
+        :param kwargs: Additional parameters for the HTTP call (`request` library)
+        :return: The HTTP response as JSON or `GhostException` if unsuccessful
+        """
+
         return self._request(resource, requests.post, **kwargs).json()
 
     def execute_put(self, resource, **kwargs):
+        """
+        Execute an HTTP PUT request against the API endpoints.
+        This method is meant for internal use.
+
+        :param resource: The last part of the URI
+        :param kwargs: Additional parameters for the HTTP call (`request` library)
+        :return: The HTTP response as JSON or `GhostException` if unsuccessful
+        """
+
         return self._request(resource, requests.put, **kwargs).json()
 
     def execute_delete(self, resource, **kwargs):
+        """
+        Execute an HTTP DELETE request against the API endpoints.
+        This method is meant for internal use.
+        Does not return anything but raises an exception when failed.
+
+        :param resource: The last part of the URI
+        :param kwargs: Additional parameters for the HTTP call (`request` library)
+        """
+
         self._request(resource, requests.delete, **kwargs)
 
     @refresh_session_if_necessary
@@ -210,10 +393,3 @@ class Ghost(object):
             raise GhostException(response.status_code, response.json().get('errors', []))
 
         return response
-
-
-class GhostException(Exception):
-    def __init__(self, code, errors):
-        super(GhostException, self).__init__(code, errors)
-        self.code = code
-        self.errors = errors

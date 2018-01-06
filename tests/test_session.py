@@ -59,6 +59,16 @@ class SessionTest(GhostTestCase):
 
         self.assertGreater(len(client.posts.list(status='all')), 0)
 
+    def test_reauthenticate(self):
+        client = self.new_logged_in_client()
+
+        self.assertGreater(len(client.posts.list(status='all')), 0)
+
+        client.revoke_refresh_token()
+        client.revoke_access_token()
+
+        self.assertGreater(len(client.posts.list(status='all')), 0)
+
     def test_version(self):
         client = self.new_client(version='auto')
 
