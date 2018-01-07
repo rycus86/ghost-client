@@ -1,5 +1,9 @@
 # Unofficial Ghost API client
 
+[![Travis](https://img.shields.io/travis/rycus86/ghost-client.svg)](https://travis-ci.org/rycus86/ghost-client)
+[![PyPI](https://img.shields.io/pypi/v/ghost-client.svg)](https://pypi.python.org/pypi/ghost-client)
+[![PyPI](https://img.shields.io/pypi/pyversions/ghost-client.svg)](https://pypi.python.org/pypi/ghost-client)
+
 This is a client library for the [Ghost blogging platform API](https://api.ghost.org).
 
 ## Installation
