@@ -3,6 +3,8 @@
 [![Travis](https://img.shields.io/travis/rycus86/ghost-client.svg)](https://travis-ci.org/rycus86/ghost-client)
 [![PyPI](https://img.shields.io/pypi/v/ghost-client.svg)](https://pypi.python.org/pypi/ghost-client)
 [![PyPI](https://img.shields.io/pypi/pyversions/ghost-client.svg)](https://pypi.python.org/pypi/ghost-client)
+[![Coverage Status](https://coveralls.io/repos/github/rycus86/ghost-client/badge.svg?branch=master)](https://coveralls.io/github/rycus86/ghost-client?branch=master)
+[![Maintainability](https://api.codeclimate.com/v1/badges/45f2a5020caa37777f5a/maintainability)](https://codeclimate.com/github/rycus86/ghost-client/maintainability)
 
 This is a client library for the [Ghost blogging platform API](https://api.ghost.org).
 

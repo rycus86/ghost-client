@@ -15,7 +15,7 @@ addons:
 
 script:
   # prepare libraries and reporters
-  - pip install nose2 coverage coveralls
+  - pip install nose2 coverage pylint coveralls
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - curl -fsSL https://testspace-client.s3.amazonaws.com/testspace-linux.tgz | tar -zxvf- -C .
@@ -48,6 +48,9 @@ jobs:
   include:
     - &integration-stage
       stage: integration
+      env:    GHOST_VERSION=1.19
+
+    - <<: *integration-stage
       env:    GHOST_VERSION=1.18
 
     - <<: *integration-stage
