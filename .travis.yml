@@ -31,7 +31,7 @@ script:
 after_script:
   # coverage reports
   - |
-    if [[ "$(python --version 2>&1)" = *3.6* ]]; then
+    if [[ "$(python --version 2>&1)" = *3.6* ]] && [ "$GHOST_VERSION" == "1" ]; then
       coveralls || exit 0
       ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT || exit 0
       ./testspace nose2-junit.xml coverage.xml || exit 0
