@@ -7,11 +7,42 @@ python:
 - '2.7'
 env: GHOST_VERSION=1
 
+addons:
+  sonarcloud:
+    organization: "rycus86-github"
+    token:
+      secure: "EfwBuzdPDXZVYHKyDL0xYv19RxYwrbLuoYaxYM5kN2XgwGxEuTIC8q/xI1jOQvuQ34ptQxKFk39ryAcXWgkAefrfQTJuIb9fJDwb0Hs6VogBwu8BSbAH/tbU97O3/AIQqNlnDJa+omVXqD+Op1G07f0q7UMmZGP1b3sntL12xGGftcx6c6Z3qUnqgdLqNhwp2VGaL+QuoGaFi0Ruqj5oVJaevEIYkfHcPfA851nkeOuVvwZDUay9pSoGREboVKg0HIEvvw7GUMS7rUIG7yv5XwTtUhd1rBmbcxVZSBLRsKFgyIgZrJsfXcYUNfnC2z7CR1Pz7wKxRa57lD8UUYqHBgZXeIV1ywxT1RMMUc+LGpzwcm4XhlsFzoNSC/9jnXzmb9RmdczCIIBSc7+PbvnQODK3IkGsqqEDGrOQ+6DZGGnb0viVzBaKswP3uWl53RTKIbEgte8CBpQmVafDTZQ30Wk/LOAx1ZPOTquafeMW9PwUFR7bjmSZL7BS+wkawRFYsVWATz3Zg7j8Jf0wdKI8n95Lm+juLNQPNjtmrnHEvpYq48tZBVEpnDL8JhqrxbinFDTyNRX8xbCRfvO/MmH3Szn6Obm0+jAsaUXttCh9IdVyNj/28HrrRFx3Sr1XtuhJ6Rv4MJioTT+q9DKjpms5N7nQopVAWade+EvhLHeLbSY="
+
 script:
-  - pip install nose2 coverage
+  # prepare libraries and reporters
+  - pip install nose2 coverage coveralls
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - curl -fsSL https://testspace-client.s3.amazonaws.com/testspace-linux.tgz | tar -zxvf- -C .
+  - ./testspace config url rycus86.testspace.com
+  # prepare tests
   - cd tests && ./prepare_tests.sh $GHOST_VERSION ; cd ..
-  - nose2 -v -C --coverage-report term-missing
+  # run the tests
+  - |
+    nose2 -v \
+      --plugin nose2.plugins.junitxml --junit-xml \
+      --with-coverage --coverage-report xml --coverage-report term-missing
   - pip install .
+after_script:
+  # coverage reports
+  - |
+    if [[ "$(python --version 2>&1)" = *3.6* ]]; then
+      coveralls || exit 0
+      ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT || exit 0
+      ./testspace nose2-junit.xml coverage.xml || exit 0
+      pylint src/*.py -r n \
+        --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
+        | tee pylint-report.txt ; echo -n
+      sonar-scanner -Dsonar.projectKey=ghost-client -Dsonar.sources=ghost_client \
+        -Dsonar.python.xunit.reportPath=nose2-junit.xml \
+        -Dsonar.python.coverage.reportPath=coverage.xml \
+        -Dsonar.python.pylint.reportPath=pylint-report.txt
+    fi
 
 jobs:
   include:
