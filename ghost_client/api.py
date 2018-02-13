@@ -80,6 +80,11 @@ class Ghost(object):
         ghost.posts.delete(post.id)
         ghost.tags.delete(tag.id)
 
+        # upload an image
+        ghost.upload(file_obj=open('sample.png', 'rb'))
+        ghost.upload(file_path='/path/to/image.jpeg', 'rb')
+        ghost.upload(name='image.gif', data=open('local.gif', 'rb').read())
+
         # log out
         ghost.logout()
 
