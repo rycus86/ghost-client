@@ -1,3 +1,6 @@
+import os
+import mimetypes
+
 import six
 import requests
 
@@ -290,6 +293,50 @@ class Ghost(object):
 
         self._username, self._password = None, None
 
+    def upload(self, file_obj=None, file_path=None, name=None, data=None):
+        """
+        Upload an image and return its path on the server.
+        Either `file_obj` or `file_path` or `name` and `data` has to be specified.
+
+        :param file_obj: A file object to upload
+        :param file_path: A file path to upload from
+        :param name: A file name for uploading
+        :param data: The file content to upload
+        :return: The path of the uploaded file on the server
+        """
+
+        close = False
+
+        if file_obj:
+            file_name, content = os.path.basename(file_obj.name), file_obj
+
+        elif file_path:
+            file_name, content = os.path.basename(file_path), open(file_path, 'rb')
+            close = True
+
+        elif name and data:
+            file_name, content = name, data
+
+        else:
+            raise GhostException(
+                400,
+                'Either `file_obj` or `file_path` or '
+                '`name` and `data` needs to be specified'
+            )
+
+        try:
+            content_type, _ = mimetypes.guess_type(file_name)
+
+            file_arg = (file_name, content, content_type)
+
+            response = self.execute_post('uploads/', files={'uploadimage': file_arg})
+
+            return response
+
+        finally:
+            if close:
+                content.close()
+
     @refresh_session_if_necessary
     def execute_get(self, resource, **kwargs):
         """
@@ -384,8 +431,9 @@ class Ghost(object):
 
         headers = kwargs.pop('headers', dict())
 
-        headers['Accept'] = 'application/json'
-        headers['Content-Type'] = 'application/json'
+        if 'json' in kwargs:
+            headers['Accept'] = 'application/json'
+            headers['Content-Type'] = 'application/json'
 
         if self._access_token:
             headers['Authorization'] = 'Bearer %s' % self._access_token
