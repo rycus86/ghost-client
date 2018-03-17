@@ -165,7 +165,7 @@ class Ghost(object):
             ).fetchone()
 
             if row:
-                return Ghost(
+                return cls(
                     base_url, version=version,
                     client_id=client_id, client_secret=row[0]
                 )
