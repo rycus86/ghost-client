@@ -68,3 +68,8 @@ jobs:
           secure: hvN5/V/EnZL0sl6U+MkGBT2K1PRazvl/g7AAOIpwxuOwixpFv1GOYCXbd9unt3+Q/JVuC1tTrzYEEkZ0MxnA13raLyqZ+viJ3qKpHNLRmG70FiZa3XDFGwTEA/Wj4MsLAKrwgsgwIPYD1rIcsfqxrZ9yCl22CpAC7HaZb6h3WnnBmQ9ERcG8C5MlLDONuHbJOBrKCCcBi9A99Oi681+CvPL6nJ7IOjs6YGsJsqmbu9j+08T7DjxfWkO/swuMPROL2rAIHIjWlZzBEcsqvTsPPbVSPV7SZ5bZE9Gm60ViqTTtsA0erFDUkUKMOF/H8ec5X4R38wQP+oF2yzxW42A08CAfkq6sQXbuhZRNczLlOFfKTlTVaSPARq1A8m7TkCj26jFOHGMSB62RY23wilZUZO1en0iBqqD0sIoRxdupjEIJCggD81XGYYFWQ8cdphoKsfIM6uswAJxnupKLPSPPOn/Ft2fixUfbvmE9XQ+8rDFmZUnW0CZdZpzEW9VSdJNv9hHI8/peSVu2ei+AFt4V2x2nkgNof/FGdH6t7LrvlvxzlviVjU6Fk8bwYF7/1gmgVsQ5i3uZJqyb81KGrDdBHKRZ0hRxhfw2jxjVk9DIEM9Udzp64hqzbCns7S9qqmqhyZpOWcYQ2wxgKRYvuO7L1a0jAwakP9O3hHjmt5hNlno=
         on:
           tags: true
+
+    - stage: verify
+      install: skip
+      script:
+        - pip install ghost-client
