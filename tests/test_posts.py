@@ -131,6 +131,27 @@ class PostTests(GhostTestCase):
 
         self.assertIsNone(last.next_page())
 
+    def test_filter_by_authors(self):
+        if self.ghost.version < '1.22.0':
+            self.skipTest(
+                'Multiple authors are not supported on version %s (< 1.22.0)' %
+                self.ghost.version
+            )
+
+        users = self.ghost.users.list()
+
+        self.assertGreater(len(users), 1)
+
+        created = self.create_post(title='Multiple authors', authors=users)
+
+        for user in users:
+            posts = self.ghost.posts.list(
+                filter='authors:[%s]' % user.slug, status='draft'
+            )
+
+            self.assertGreater(len(posts), 0)
+            self.assertIn(created.id, list(p.id for p in posts))
+
     def test_invalid_post(self):
         self.assertRaises(GhostException, self.ghost.posts.create, uuid='xyz')
 
