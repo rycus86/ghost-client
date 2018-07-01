@@ -28,7 +28,7 @@ script:
       --plugin nose2.plugins.junitxml --junit-xml \
       --with-coverage --coverage-report xml --coverage-report term-missing
   - pip install .
-after_script:
+after_success:
   # coverage reports
   - |
     if [[ "$(python --version 2>&1)" = *3.6* ]] && [ "$GHOST_VERSION" == "1" ]; then
