@@ -83,7 +83,7 @@ class GhostTestCase(unittest.TestCase):
             finally:
                 connection.close()
 
-        except PermissionError:
+        except OSError:
             pass  # failed to open the file in writable mode
 
     @staticmethod
