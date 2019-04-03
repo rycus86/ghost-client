@@ -122,7 +122,7 @@ class SessionTest(GhostTestCase):
                 self.assertNotEqual(Ghost.DEFAULT_VERSION, version)
 
             if version < '2':
-                self.assertEqual(counters['configuration/about/'], 1)
+                self.assertEqual(counters['configuration/about/'], 2)  # once on login, once afterwards
             else:
                 self.assertEqual(len(counters), 0)  # we don't try to fetch the version again
 

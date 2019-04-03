@@ -15,7 +15,7 @@ def refresh_session_if_necessary(f):
         try:
             result = f(self, *args, **kwargs)
         except Exception as ex:
-            if hasattr(ex, 'code') and ex.code in (401, 403):
+            if hasattr(ex, 'code') and ex.code in (401, 403) and not kwargs.get('anonymous'):
                 self.refresh_session()
                 # retry now
                 result = f(self, *args, **kwargs)

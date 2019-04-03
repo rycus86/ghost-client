@@ -71,12 +71,14 @@ class GhostTestCase(unittest.TestCase):
         import os
         import sqlite3
 
-        fd = os.open(GhostTestCase._find_database(), os.O_RDONLY)
+        fd = os.open(GhostTestCase._find_database(), os.O_RDWR)
         connection = sqlite3.connect('/dev/fd/%d' % fd)
         os.close(fd)
 
         try:
             connection.executescript('delete from brute')
+        except sqlite3.OperationalError:
+            pass  # failed to delete the table, maybe can't write
         finally:
             connection.close()
 

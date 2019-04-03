@@ -23,12 +23,11 @@ class UploadTests(GhostTestCase):
             response = self.ghost.upload(file_obj=image_file)
 
         if self.ghost.version < '2':
-            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1.png')
+            url = response
         else:
-            self.assertRegex(
-                response['images'][0]['url'],
-                '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1(-[0-9]+)?.png'
-            )
+            url = response['images'][0]['url']
+
+        self.assertRegex(url, '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1(-[0-9]+)?.png')
 
     def test_upload_from_file_path(self):
         file_path = os.path.join(os.path.dirname(__file__), 'images/ghost-icon-2.png')
@@ -36,12 +35,11 @@ class UploadTests(GhostTestCase):
         response = self.ghost.upload(file_path=file_path)
 
         if self.ghost.version < '2':
-            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2.png')
+            url = response
         else:
-            self.assertRegex(
-                response['images'][0]['url'],
-                '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2(-[0-9]+)?.png'
-            )
+            url = response['images'][0]['url']
+
+        self.assertRegex(url, '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2(-[0-9]+)?.png')
 
     def test_upload_from_data(self):
         file_path = os.path.join(os.path.dirname(__file__), 'images/ghost-icon-1.png')
@@ -52,12 +50,11 @@ class UploadTests(GhostTestCase):
         response = self.ghost.upload(name='custom-name.png', data=data)
 
         if self.ghost.version < '2':
-            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/custom-name.png')
+            url = response
         else:
-            self.assertRegex(
-                response['images'][0]['url'],
-                '.*/content/images/[0-9]{4}/[0-9]{2}/custom-name(-[0-9]+)?.png'
-            )
+            url = response['images'][0]['url']
+
+        self.assertRegex(url, '.*/content/images/[0-9]{4}/[0-9]{2}/custom-name(-[0-9]+)?.png')
 
     def test_invalid_arguments(self):
         self.assertRaises(GhostException, self.ghost.upload)

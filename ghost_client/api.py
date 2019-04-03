@@ -192,16 +192,17 @@ class Ghost(object):
             return self._version
 
         if self._version == 'auto':
+            # Try the old API
             try:
-                data = self.execute_get('site/', api_version='v2/admin')
-                self._version = data['site']['version']
-
-                self._api_version = 'v2/admin'
+                data = self.execute_get('configuration/about/', anonymous=True)
+                self._version = data['configuration'][0]['version']
             except GhostException:
-                # Try the old API
+                # Try the new API
                 try:
-                    data = self.execute_get('configuration/about/')
-                    self._version = data['configuration'][0]['version']
+                    data = self.execute_get('site/', api_version='v2/admin', anonymous=True)
+                    self._version = data['site']['version']
+
+                    self._api_version = 'v2/admin'
                 except GhostException:
                     return self.DEFAULT_VERSION
 
@@ -215,6 +216,8 @@ class Ghost(object):
         :param password: The password for the user
         :return: The authentication response from the REST endpoint
         """
+
+        # TODO API key
 
         if self.version < '2':
             data = self._deprecated_authenticate(
@@ -251,7 +254,7 @@ class Ghost(object):
 
             return
 
-        return self._authenticate(
+        return self._deprecated_authenticate(
             grant_type='refresh_token',
             refresh_token=self._refresh_token,
             client_id=self._client_id,
