@@ -48,6 +48,15 @@ jobs:
   include:
     - &integration-stage
       stage: integration
+      env:    GHOST_VERSION=2.19
+
+    - <<: *integration-stage
+      env:    GHOST_VERSION=2.16
+
+    - <<: *integration-stage
+      env:    GHOST_VERSION=1.25
+
+    - <<: *integration-stage
       env:    GHOST_VERSION=1.22
 
     - <<: *integration-stage

@@ -22,14 +22,26 @@ class UploadTests(GhostTestCase):
         with open(file_path, 'rb') as image_file:
             response = self.ghost.upload(file_obj=image_file)
 
-        self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1.png')
+        if self.ghost.version < '2':
+            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1.png')
+        else:
+            self.assertRegex(
+                response['images'][0]['url'],
+                '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-1(-[0-9]+)?.png'
+            )
 
     def test_upload_from_file_path(self):
         file_path = os.path.join(os.path.dirname(__file__), 'images/ghost-icon-2.png')
 
         response = self.ghost.upload(file_path=file_path)
 
-        self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2.png')
+        if self.ghost.version < '2':
+            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2.png')
+        else:
+            self.assertRegex(
+                response['images'][0]['url'],
+                '.*/content/images/[0-9]{4}/[0-9]{2}/ghost-icon-2(-[0-9]+)?.png'
+            )
 
     def test_upload_from_data(self):
         file_path = os.path.join(os.path.dirname(__file__), 'images/ghost-icon-1.png')
@@ -39,7 +51,13 @@ class UploadTests(GhostTestCase):
 
         response = self.ghost.upload(name='custom-name.png', data=data)
 
-        self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/custom-name.png')
+        if self.ghost.version < '2':
+            self.assertRegex(response, '/content/images/[0-9]{4}/[0-9]{2}/custom-name.png')
+        else:
+            self.assertRegex(
+                response['images'][0]['url'],
+                '.*/content/images/[0-9]{4}/[0-9]{2}/custom-name(-[0-9]+)?.png'
+            )
 
     def test_invalid_arguments(self):
         self.assertRaises(GhostException, self.ghost.upload)

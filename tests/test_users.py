@@ -13,7 +13,7 @@ class UserTests(GhostTestCase):
 
         post = self.create_post(title='Post with author', author_id=user.id)
 
-        stored = self.ghost.posts.get(post.id, include='author', status='all')
+        stored = self.ghost.posts.get(post.id, include='authors', status='all')
 
         self.assertEqual(stored.id, post.id)
         self.assertEqual(stored.title, 'Post with author')

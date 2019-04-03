@@ -35,6 +35,8 @@ class GhostTestCase(unittest.TestCase):
         )
 
     def new_client(self, version=GHOST_VERSION):
+        self._clear_rate_limit()
+
         return Ghost.from_sqlite(
             self._find_database(), self.GHOST_BASE_URL, version=version
         )
@@ -63,6 +65,20 @@ class GhostTestCase(unittest.TestCase):
         return client.execute_put('settings/', json={
             "settings": [{"key": "labs", "value": "{\"publicAPI\":true}"}]
         })
+
+    @staticmethod
+    def _clear_rate_limit():
+        import os
+        import sqlite3
+
+        fd = os.open(GhostTestCase._find_database(), os.O_RDONLY)
+        connection = sqlite3.connect('/dev/fd/%d' % fd)
+        os.close(fd)
+
+        try:
+            connection.executescript('delete from brute')
+        finally:
+            connection.close()
 
     @staticmethod
     def _find_database():

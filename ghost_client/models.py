@@ -1,4 +1,5 @@
 import json
+import datetime
 
 from .errors import GhostException
 
@@ -30,8 +31,15 @@ class Post(Model):
         elif item == 'tags' and 'tags' in self:
             return list(map(Model, self['tags']))
 
+        elif item == 'authors' and 'authors' in self:
+            return list(map(Model, self['authors']))
+
         elif item == 'author':
-            return Model(self['author'])
+            if 'primary_author' in self:
+                return Model(self['primary_author'])
+
+            if 'author' in self:
+                return Model(self['author'])
 
         else:
             return super(Post, self).__getattr__(item)
@@ -262,7 +270,10 @@ class PostController(Controller):
         :return: The updated `Post` object
         """
 
-        return super(PostController, self).update(id, **self._with_markdown(kwargs))
+        return super(PostController, self).update(
+            id=id,
+            # updated_at='%sZ' % datetime.datetime.utcnow().isoformat(),
+            **self._with_markdown(kwargs))
 
     def _with_markdown(self, kwargs):
         markdown = kwargs.pop('markdown', None)
@@ -273,10 +284,14 @@ class PostController(Controller):
                 kwargs['markdown'] = markdown
 
             else:
+                card_type = "markdown"
+                if self.ghost.version.startswith('1'):
+                    card_type = "card-markdown"  # TODO comment
+
                 updated = dict(kwargs)
                 updated['mobiledoc'] = json.dumps({
                     "version": "0.3.1", "markups": [], "atoms": [],
-                    "cards": [["card-markdown", {"cardName": "card-markdown", "markdown": markdown}]],
+                    "cards": [[card_type, {"cardName": card_type, "markdown": markdown}]],
                     "sections": [[10, 0]]})
                 return updated
 

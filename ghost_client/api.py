@@ -102,9 +102,7 @@ class Ghost(object):
     """
 
     def __init__(
-            self, base_url, version='auto',
-            client_id=None, client_secret=None,
-            access_token=None, refresh_token=None
+            self, base_url, version='auto', **kwargs
     ):
         """
         Creates a new Ghost API client.
@@ -117,18 +115,22 @@ class Ghost(object):
         :param refresh_token: Self-supplied refresh token (optional)
         """
 
-        self.base_url = '%s/ghost/api/v0.1' % base_url
+        self.base_url = '%s/ghost/api' % base_url
+        self._api_version = 'v0.1'
         self._version = version
 
-        self._client_id = client_id
-        self._client_secret = client_secret
-        self._access_token = access_token
-        self._refresh_token = refresh_token
+        self._session_cookie = kwargs.get('session_cookie')
+
+        # deprecated
+        self._client_id = kwargs.get('client_id')
+        self._client_secret = kwargs.get('client_secret')
+        self._access_token = kwargs.get('access_token')
+        self._refresh_token = kwargs.get('refresh_token')
 
         self._username = None
         self._password = None
 
-        if not self._client_id or not self._client_secret:
+        if not self._client_id or not self._client_secret:  # TODO
             raise GhostException(401, [{
                 'errorType': 'InternalError',
                 'message': 'No client_id or client_secret given or found'
@@ -191,10 +193,17 @@ class Ghost(object):
 
         if self._version == 'auto':
             try:
-                data = self.execute_get('configuration/about/')
-                self._version = data['configuration'][0]['version']
+                data = self.execute_get('site/', api_version='v2/admin')
+                self._version = data['site']['version']
+
+                self._api_version = 'v2/admin'
             except GhostException:
-                return self.DEFAULT_VERSION
+                # Try the old API
+                try:
+                    data = self.execute_get('configuration/about/')
+                    self._version = data['configuration'][0]['version']
+                except GhostException:
+                    return self.DEFAULT_VERSION
 
         return self._version
 
@@ -207,13 +216,20 @@ class Ghost(object):
         :return: The authentication response from the REST endpoint
         """
 
-        data = self._authenticate(
-            grant_type='password',
-            username=username,
-            password=password,
-            client_id=self._client_id,
-            client_secret=self._client_secret
-        )
+        if self.version < '2':
+            data = self._deprecated_authenticate(
+                grant_type='password',
+                username=username,
+                password=password,
+                client_id=self._client_id,
+                client_secret=self._client_secret
+            )
+
+        else:
+            data = self._authenticate(
+                username=username,
+                password=password
+            )
 
         self._username = username
         self._password = password
@@ -244,7 +260,19 @@ class Ghost(object):
 
     def _authenticate(self, **kwargs):
         response = requests.post(
-            '%s/authentication/token' % self.base_url, data=kwargs
+            '%s/%s/session' % (self.base_url, self._api_version), data=kwargs, headers={'Origin': self.base_url}
+        )
+
+        if response.status_code != 201:
+            raise GhostException(response.status_code, response.json().get('errors', []))
+
+        self._session_cookie = response.cookies.get('ghost-admin-api-session')
+
+        return response.text
+
+    def _deprecated_authenticate(self, **kwargs):
+        response = requests.post(
+            '%s/%s/authentication/token' % (self.base_url, self._api_version), data=kwargs
         )
 
         if response.status_code != 200:
@@ -296,7 +324,7 @@ class Ghost(object):
         self.revoke_refresh_token()
         self.revoke_access_token()
 
-        self._username, self._password = None, None
+        self._username, self._password, self._session_cookie = None, None, None
 
     def upload(self, file_obj=None, file_path=None, name=None, data=None):
         """
@@ -334,7 +362,11 @@ class Ghost(object):
 
             file_arg = (file_name, content, content_type)
 
-            response = self.execute_post('uploads/', files={'uploadimage': file_arg})
+            if self.version < '2':
+                response = self.execute_post('uploads/', files={'uploadimage': file_arg})
+
+            else:
+                response = self.execute_post('images/upload/', files={'file': file_arg})
 
             return response
 
@@ -353,12 +385,14 @@ class Ghost(object):
         :return: The HTTP response as JSON or `GhostException` if unsuccessful
         """
 
-        url = '%s/%s' % (self.base_url, resource)
+        api_version = kwargs.pop('api_version', self._api_version)
+        url = '%s/%s/%s' % (self.base_url, api_version, resource)
 
         headers = kwargs.pop('headers', dict())
 
         headers['Accept'] = 'application/json'
         headers['Content-Type'] = 'application/json'
+        headers['Origin'] = self.base_url
 
         if kwargs:
             separator = '&' if '?' in url else '?'
@@ -372,7 +406,9 @@ class Ghost(object):
 
                 separator = '&'
 
-        if self._access_token:
+        if self._session_cookie:
+            headers['Cookie'] = 'ghost-admin-api-session=%s' % self._session_cookie
+        elif self._access_token:
             headers['Authorization'] = 'Bearer %s' % self._access_token
 
         else:
@@ -386,7 +422,13 @@ class Ghost(object):
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
 
-        return response.json()
+        try:
+            return response.json()
+        except Exception:
+            raise GhostException(401, [{
+                'errorType': 'ClientError',
+                'message': 'Failed to decode JSON response [content-type: %s]' % response.headers.get('Content-Type')
+            }])
 
     def execute_post(self, resource, **kwargs):
         """
@@ -426,22 +468,24 @@ class Ghost(object):
 
     @refresh_session_if_necessary
     def _request(self, resource, request, **kwargs):
-        if not self._access_token:
-            raise GhostException(401, [{
-                'errorType': 'ClientError',
-                'message': 'Access token not found'
-            }])
-
-        url = '%s/%s' % (self.base_url, resource)
+        url = '%s/%s/%s' % (self.base_url, self._api_version, resource)
 
         headers = kwargs.pop('headers', dict())
+        headers['Origin'] = self.base_url
 
         if 'json' in kwargs:
             headers['Accept'] = 'application/json'
             headers['Content-Type'] = 'application/json'
 
-        if self._access_token:
+        if self._session_cookie:
+            headers['Cookie'] = 'ghost-admin-api-session=%s' % self._session_cookie
+        elif self._access_token:
             headers['Authorization'] = 'Bearer %s' % self._access_token
+        else:
+            raise GhostException(401, [{
+                'errorType': 'ClientError',
+                'message': 'Access token not found'
+            }])
 
         response = request(url, headers=headers, **kwargs)
 

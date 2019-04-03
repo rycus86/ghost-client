@@ -73,11 +73,13 @@ class SessionTest(GhostTestCase):
         client = self.new_client(version='auto')
 
         try:
-            self.assertEqual('1', client.version)
+            version = client.version
+            if version < '2':
+                self.assertEqual(Ghost.DEFAULT_VERSION, client.version)
 
             self.login(client)
 
-            self.assertNotEqual('1', client.version)
+            self.assertNotEqual(Ghost.DEFAULT_VERSION, client.version)
 
         finally:
             client.logout()
@@ -100,19 +102,29 @@ class SessionTest(GhostTestCase):
 
             client.execute_get = counting_get
 
-            for _ in range(3):
-                self.assertEqual('1', client.version)
+            version = Ghost.DEFAULT_VERSION
 
-            self.assertEqual(counters['configuration/about/'], 3)
+            for _ in range(3):
+                version = client.version
+                if version < '2':
+                    self.assertEqual(Ghost.DEFAULT_VERSION, version)
+                else:
+                    break
+            else:
+                self.assertEqual(counters['configuration/about/'], 3)
 
             counters.clear()
 
             self.login(client)
 
             for _ in range(3):
-                self.assertNotEqual('1', client.version)
+                version = client.version
+                self.assertNotEqual(Ghost.DEFAULT_VERSION, version)
 
-            self.assertEqual(counters['configuration/about/'], 1)
+            if version < '2':
+                self.assertEqual(counters['configuration/about/'], 1)
+            else:
+                self.assertEqual(len(counters), 0)  # we don't try to fetch the version again
 
         finally:
             client.logout()
