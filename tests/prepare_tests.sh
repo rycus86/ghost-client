@@ -4,7 +4,7 @@ GHOST_VERSION=${1:-1}
 GHOST_BASE_URL="${GHOST_BASE_URL:-http://localhost:12368}"
 
 if [ -z "$GHOST_DB_DIR" ]; then
-    GHOST_DB_DIR="$(dirname $0)"
+    GHOST_DB_DIR="$(cd $(dirname $0) && pwd)"
 fi
 
 # cleanup
