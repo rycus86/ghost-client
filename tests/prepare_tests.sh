@@ -2,7 +2,10 @@
 
 GHOST_VERSION=${1:-1}
 GHOST_BASE_URL="${GHOST_BASE_URL:-http://localhost:12368}"
-GHOST_DB_DIR="${GHOST_DB_DIR:-$PWD}"
+
+if [ -z "$GHOST_DB_DIR" ]; then
+    GHOST_DB_DIR="$PWD/tests"
+fi
 
 # cleanup
 docker rm -f ghost-testing          > /dev/null 2>&1
@@ -30,6 +33,6 @@ done
 curl -fs "${GHOST_BASE_URL}/ghost/api/v0.1/authentication/setup/" \
     -H 'Content-Type: application/json' \
     --data-binary '{"setup":[{"name":"Testing","email":"test@test.local","password":"abcd123456","blogTitle":"Testing"}]}' \
-    > /dev/null
+    | python -c 'import json; print(json.dumps(json.loads(input()), indent=2))'
 
 exit $?

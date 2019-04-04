@@ -1,11 +1,12 @@
 language: python
 sudo: true
 python:
+- '3.7'
 - '3.6'
 - '3.5'
 - '3.4'
 - '2.7'
-env: GHOST_VERSION=1
+env: GHOST_VERSION=2
 
 addons:
   sonarcloud:
@@ -21,7 +22,7 @@ script:
   - curl -fsSL https://testspace-client.s3.amazonaws.com/testspace-linux.tgz | tar -zxvf- -C .
   - ./testspace config url rycus86.testspace.com
   # prepare tests
-  - cd tests && ./prepare_tests.sh $GHOST_VERSION ; cd ..
+  - cd tests && ./prepare_tests.sh $GHOST_VERSION && cd ..
   # run the tests
   - |
     nose2 -v \
