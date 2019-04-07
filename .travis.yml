@@ -55,6 +55,9 @@ jobs:
       env:    GHOST_VERSION=2.16
 
     - <<: *integration-stage
+      env:    GHOST_VERSION=2.10.0
+
+    - <<: *integration-stage
       env:    GHOST_VERSION=1.25
 
     - <<: *integration-stage
