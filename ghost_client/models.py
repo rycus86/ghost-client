@@ -35,7 +35,7 @@ class Post(Model):
             return list(map(Model, self['authors']))
 
         elif item == 'author':
-            if 'primary_author' in self:
+            if 'primary_author' in self and self['primary_author']:
                 return Model(self['primary_author'])
 
             if 'author' in self:

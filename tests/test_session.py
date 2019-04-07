@@ -117,12 +117,13 @@ class SessionTest(GhostTestCase):
 
             self.login(client)
 
-            for _ in range(3):
+            for _ in range(10):
                 version = client.version
                 self.assertNotEqual(Ghost.DEFAULT_VERSION, version)
 
             if version < '2':
-                self.assertEqual(counters['configuration/about/'], 2)  # once on login, once afterwards
+                # once on login, once for API version, once afterwards
+                self.assertEqual(counters['configuration/about/'], 3)
             else:
                 self.assertEqual(len(counters), 0)  # we don't try to fetch the version again
 
