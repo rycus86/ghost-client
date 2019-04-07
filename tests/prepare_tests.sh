@@ -33,6 +33,6 @@ done
 curl -fs "${GHOST_BASE_URL}/ghost/api/v0.1/authentication/setup/" \
     -H 'Content-Type: application/json' \
     --data-binary '{"setup":[{"name":"Testing","email":"test@test.local","password":"abcd123456","blogTitle":"Testing"}]}' \
-    | python -c 'import json; print(json.dumps(json.loads(input()), indent=2))'
+    | python -c 'import sys; import json; print(json.dumps(json.load(sys.stdin), indent=2))'
 
 exit $?
