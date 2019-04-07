@@ -6,7 +6,7 @@ import requests
 
 from .models import Controller, PostController
 from .helpers import refresh_session_if_necessary
-from .errors import GhostException
+from .errors import GhostException, GhostRequestException
 
 
 class Ghost(object):
@@ -267,7 +267,11 @@ class Ghost(object):
         )
 
         if response.status_code != 201:
-            raise GhostException(response.status_code, response.json().get('errors', []))
+            raise GhostRequestException(
+                response.status_code,
+                response.request.path_url,
+                response.json().get('errors', [])
+            )
 
         self._session_cookie = response.cookies.get('ghost-admin-api-session')
 
@@ -279,7 +283,11 @@ class Ghost(object):
         )
 
         if response.status_code != 200:
-            raise GhostException(response.status_code, response.json().get('errors', []))
+            raise GhostRequestException(
+                response.status_code,
+                response.request.path_url,
+                response.json().get('errors', [])
+            )
 
         data = response.json()
 
@@ -423,12 +431,16 @@ class Ghost(object):
         response = requests.get(url, headers=headers)
 
         if response.status_code // 100 != 2:
-            raise GhostException(response.status_code, response.json().get('errors', []))
+            raise GhostRequestException(
+                response.status_code,
+                response.request.path_url,
+                response.json().get('errors', [])
+            )
 
         try:
             return response.json()
         except Exception:
-            raise GhostException(401, [{
+            raise GhostException(400, [{
                 'errorType': 'ClientError',
                 'message': 'Failed to decode JSON response [content-type: %s]' % response.headers.get('Content-Type')
             }])
@@ -493,6 +505,10 @@ class Ghost(object):
         response = request(url, headers=headers, **kwargs)
 
         if response.status_code // 100 != 2:
-            raise GhostException(response.status_code, response.json().get('errors', []))
+            raise GhostRequestException(
+                response.status_code,
+                response.request.path_url,
+                response.json().get('errors', [])
+            )
 
         return response
