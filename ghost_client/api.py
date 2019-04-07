@@ -378,7 +378,7 @@ class Ghost(object):
 
             file_arg = (file_name, content, content_type)
 
-            if self.version < '2':
+            if self.version < '2.16':
                 response = self.execute_post('uploads/', files={'uploadimage': file_arg})
 
             else:
