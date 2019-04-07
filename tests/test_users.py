@@ -24,6 +24,12 @@ class UserTests(GhostTestCase):
         self.assertEqual(stored.author.name, user.name)
 
     def test_list_without_login(self):
+        if self.ghost.version >= '2':
+            self.skipTest(
+                'Endpoints without authentication are not supported on version %s (>= 2)' %
+                self.ghost.version
+            )
+
         all_users = self.ghost.users.list()
 
         self.enable_public_api()

@@ -116,7 +116,7 @@ class Ghost(object):
         """
 
         self.base_url = '%s/ghost/api' % base_url
-        self._api_version = 'v0.1'
+        self._api_version = 'auto'
         self._version = version
 
         self._session_cookie = kwargs.get('session_cookie')
@@ -194,19 +194,24 @@ class Ghost(object):
         if self._version == 'auto':
             # Try the old API
             try:
-                data = self.execute_get('configuration/about/', anonymous=True)
+                data = self.execute_get('configuration/about/', api_version='v0.1', anonymous=True)
                 self._version = data['configuration'][0]['version']
             except GhostException:
                 # Try the new API
                 try:
                     data = self.execute_get('site/', api_version='v2/admin', anonymous=True)
                     self._version = data['site']['version']
-
-                    self._api_version = 'v2/admin'
                 except GhostException:
                     return self.DEFAULT_VERSION
 
         return self._version
+
+    @property
+    def api_version(self):  # TODO docs
+        if self._api_version == 'auto':
+            self._api_version = 'v0.1' if self.version < '2' else 'v2/admin'
+
+        return self._api_version
 
     def login(self, username, password):
         """
@@ -263,7 +268,7 @@ class Ghost(object):
 
     def _authenticate(self, **kwargs):
         response = requests.post(
-            '%s/%s/session' % (self.base_url, self._api_version), data=kwargs, headers={'Origin': self.base_url}
+            '%s/%s/session' % (self.base_url, self.api_version), data=kwargs, headers={'Origin': self.base_url}
         )
 
         if response.status_code != 201:
@@ -279,7 +284,7 @@ class Ghost(object):
 
     def _deprecated_authenticate(self, **kwargs):
         response = requests.post(
-            '%s/%s/authentication/token' % (self.base_url, self._api_version), data=kwargs
+            '%s/%s/authentication/token' % (self.base_url, self.api_version), data=kwargs
         )
 
         if response.status_code != 200:
@@ -396,7 +401,10 @@ class Ghost(object):
         :return: The HTTP response as JSON or `GhostException` if unsuccessful
         """
 
-        api_version = kwargs.pop('api_version', self._api_version)
+        api_version = kwargs.pop('api_version', None)
+        if not api_version:
+            api_version = self.api_version
+
         url = '%s/%s/%s' % (self.base_url, api_version, resource)
 
         headers = kwargs.pop('headers', dict())
@@ -422,7 +430,7 @@ class Ghost(object):
         elif self._access_token:
             headers['Authorization'] = 'Bearer %s' % self._access_token
 
-        else:
+        elif self._version < '2':
             separator = '&' if '?' in url else '?'
             url = '%s%sclient_id=%s&client_secret=%s' % (
                 url, separator, self._client_id, self._client_secret
@@ -483,7 +491,7 @@ class Ghost(object):
 
     @refresh_session_if_necessary
     def _request(self, resource, request, **kwargs):
-        url = '%s/%s/%s' % (self.base_url, self._api_version, resource)
+        url = '%s/%s/%s' % (self.base_url, self.api_version, resource)
 
         headers = kwargs.pop('headers', dict())
         headers['Origin'] = self.base_url

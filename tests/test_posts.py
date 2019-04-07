@@ -98,6 +98,12 @@ class PostTests(GhostTestCase):
         ))
 
     def test_list_without_login(self):
+        if self.ghost.version >= '2':
+            self.skipTest(
+                'Endpoints without authentication are not supported on version %s (>= 2)' %
+                self.ghost.version
+            )
+
         self.create_post(title='Test Post A', status='published')
         self.create_post(title='Test Post B', status='published')
 
