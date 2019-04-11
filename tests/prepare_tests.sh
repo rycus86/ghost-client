@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GHOST_VERSION=${1:-1}
+GHOST_VERSION=${1:-2}
 GHOST_BASE_URL="${GHOST_BASE_URL:-http://localhost:12368}"
 
 if [ -z "$GHOST_DB_DIR" ]; then
