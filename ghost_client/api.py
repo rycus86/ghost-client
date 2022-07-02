@@ -29,11 +29,8 @@ class Ghost(object):
         # or to use a specific client ID and secret
         ghost = Ghost(
             'http://localhost:2368',
-            client_id='ghost-admin', client_secret='secret_key'
+            admin_key=='admin API key'
         )
-
-        # log in
-        ghost.login('username', 'password')
 
         # print the server's version
         print(ghost.version)
@@ -87,8 +84,6 @@ class Ghost(object):
         ghost.upload(file_path='/path/to/image.jpeg', 'rb')
         ghost.upload(name='image.gif', data=open('local.gif', 'rb').read())
 
-        # log out
-        ghost.logout()
 
     The logged in credentials will be saved in memory and
     on HTTP 401 errors the client will attempt
@@ -106,7 +101,7 @@ class Ghost(object):
     def __init__(
             self, base_url, version='auto',
             client_id=None, client_secret=None,
-            access_token=None, refresh_token=None,
+            access_token=None,
             admin_key=None
     ):
         """
@@ -114,10 +109,8 @@ class Ghost(object):
 
         :param base_url: The base url of the server
         :param version: The server version to use (default: `auto`)
-        :param client_id: Self-supplied client ID (optional)
-        :param client_secret: Self-supplied client secret (optional)
         :param access_token: Self-supplied access token (optional)
-        :param refresh_token: Self-supplied refresh token (optional)
+        :param admin_key: admin API key
         """
 
         self.base_url = '%s/ghost/api/admin' % base_url
@@ -126,7 +119,6 @@ class Ghost(object):
         self._client_id = client_id
         self._client_secret = client_secret
         self._access_token = access_token
-        self._refresh_token = refresh_token
         self._admin_key = admin_key
 
         self._username = None
@@ -209,7 +201,6 @@ class Ghost(object):
 
         return self._authenticate(
             grant_type='refresh_token',
-            refresh_token=self._refresh_token,
             client_id=self._client_id,
             client_secret=self._client_secret,
             admin_key=self._admin_key
@@ -242,7 +233,6 @@ class Ghost(object):
         token_str = token
 
         self._access_token = token_str
-        self._refresh_token = token_str
 
         return token_str
 
@@ -261,20 +251,6 @@ class Ghost(object):
 
         self._access_token = None
 
-    def revoke_refresh_token(self):
-        """
-        Revoke the refresh token currently active.
-        """
-
-        if not self._refresh_token:
-            return
-
-        self.execute_post('authentication/revoke', json=dict(
-            token_type_hint='refresh_token',
-            token=self._refresh_token
-        ))
-
-        self._refresh_token = None
 
 
     def upload(self, file_obj=None, file_path=None, name=None, data=None):
