@@ -190,34 +190,13 @@ class Ghost(object):
 
         if self._version == 'auto':
             try:
-                data = self.execute_get('admin/site/')
-                self._version = data['configuration'][0]['version']
+                data = self.execute_get('site/')
+                self._version = data['site']['version']
             except GhostException:
                 return self.DEFAULT_VERSION
 
         return self._version
 
-    def login(self, username, password):
-        """
-        Authenticate with the server.
-
-        :param username: The username of an existing user
-        :param password: The password for the user
-        :return: The authentication response from the REST endpoint
-        """
-
-        data = self._authenticate(
-            grant_type='password',
-            username=username,
-            password=password,
-            client_id=self._client_id,
-            client_secret=self._client_secret
-        )
-
-        self._username = username
-        self._password = password
-
-        return data
 
     def refresh_session(self):
         """
@@ -228,17 +207,12 @@ class Ghost(object):
         :return: The authentication response or `None` if not available
         """
 
-        if not self._refresh_token:
-            if self._username and self._password:
-                return self.login(self._username, self._password)
-
-            return
-
         return self._authenticate(
             grant_type='refresh_token',
             refresh_token=self._refresh_token,
             client_id=self._client_id,
-            client_secret=self._client_secret
+            client_secret=self._client_secret,
+            admin_key=self._admin_key
         )
 
     def _authenticate(self, **kwargs):
@@ -302,16 +276,6 @@ class Ghost(object):
 
         self._refresh_token = None
 
-    def logout(self):
-        """
-        Log out, revoking the access tokens
-        and forgetting the login details if they were given.
-        """
-
-        self.revoke_refresh_token()
-        self.revoke_access_token()
-
-        self._username, self._password = None, None
 
     def upload(self, file_obj=None, file_path=None, name=None, data=None):
         """
@@ -390,15 +354,9 @@ class Ghost(object):
         if self._access_token:
             headers['Authorization'] = 'Ghost %s' % self._access_token
 
-        else:
-            separator = '&' if '?' in url else '?'
-            url = '%s%sclient_id=%s&client_secret=%s' % (
-                url, separator, self._client_id, self._client_secret
-            )
-
         response = requests.get(url, headers=headers)
 
-        #print(response.content)
+        print(response.content)
 
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
@@ -464,7 +422,7 @@ class Ghost(object):
 
         response = request(url, headers=headers, **kwargs)
 
-        #print(response.content)
+        print(response.content)
 
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
