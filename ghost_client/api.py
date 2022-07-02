@@ -3,6 +3,8 @@ import mimetypes
 
 import six
 import requests
+import jwt	# pip install pyjwt
+from datetime import datetime as date
 
 from .models import Controller, PostController
 from .helpers import refresh_session_if_necessary
@@ -104,7 +106,8 @@ class Ghost(object):
     def __init__(
             self, base_url, version='auto',
             client_id=None, client_secret=None,
-            access_token=None, refresh_token=None
+            access_token=None, refresh_token=None,
+            admin_key=None
     ):
         """
         Creates a new Ghost API client.
@@ -117,22 +120,18 @@ class Ghost(object):
         :param refresh_token: Self-supplied refresh token (optional)
         """
 
-        self.base_url = '%s/ghost/api/v0.1' % base_url
+        self.base_url = '%s/ghost/api/admin' % base_url
         self._version = version
 
         self._client_id = client_id
         self._client_secret = client_secret
         self._access_token = access_token
         self._refresh_token = refresh_token
+        self._admin_key = admin_key
 
         self._username = None
         self._password = None
 
-        if not self._client_id or not self._client_secret:
-            raise GhostException(401, [{
-                'errorType': 'InternalError',
-                'message': 'No client_id or client_secret given or found'
-            }])
 
         self.posts = PostController(self)
         self.tags = Controller(self, 'tags')
@@ -191,7 +190,7 @@ class Ghost(object):
 
         if self._version == 'auto':
             try:
-                data = self.execute_get('configuration/about/')
+                data = self.execute_get('admin/site/')
                 self._version = data['configuration'][0]['version']
             except GhostException:
                 return self.DEFAULT_VERSION
@@ -243,19 +242,35 @@ class Ghost(object):
         )
 
     def _authenticate(self, **kwargs):
-        response = requests.post(
-            '%s/authentication/token' % self.base_url, data=kwargs
-        )
 
-        if response.status_code != 200:
-            raise GhostException(response.status_code, response.json().get('errors', []))
+        # Split the key into ID and SECRET
+        id, secret = self._admin_key.split(':')
 
-        data = response.json()
+        # Prepare header and payload
+        iat = int(date.now().timestamp())
 
-        self._access_token = data.get('access_token')
-        self._refresh_token = data.get('refresh_token')
+        header = {'alg': 'HS256', 'typ': 'JWT', 'kid': id}
+        payload = {
+            'iat': iat,
+            'exp': iat + 5 * 60,
+            'aud': '/admin/'
+        }
 
-        return data
+        # Create the token (including decoding secret)
+        token = jwt.encode(payload, bytes.fromhex(secret), algorithm='HS256', headers=header)
+        #print(token)
+
+        # Linux version
+        #print('Ghost {}'.format(token.decode("utf-8")))
+        #token_str = token.decode("utf-8")
+
+        # Windows version
+        token_str = token
+
+        self._access_token = token_str
+        self._refresh_token = token_str
+
+        return token_str
 
     def revoke_access_token(self):
         """
@@ -373,7 +388,7 @@ class Ghost(object):
                 separator = '&'
 
         if self._access_token:
-            headers['Authorization'] = 'Bearer %s' % self._access_token
+            headers['Authorization'] = 'Ghost %s' % self._access_token
 
         else:
             separator = '&' if '?' in url else '?'
@@ -382,6 +397,8 @@ class Ghost(object):
             )
 
         response = requests.get(url, headers=headers)
+
+        #print(response.content)
 
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
@@ -436,14 +453,18 @@ class Ghost(object):
 
         headers = kwargs.pop('headers', dict())
 
-        if 'json' in kwargs:
-            headers['Accept'] = 'application/json'
-            headers['Content-Type'] = 'application/json'
+        #if 'json' in kwargs:
+        headers['Accept'] = 'application/json'
+        headers['Content-Type'] = 'application/json'
 
         if self._access_token:
-            headers['Authorization'] = 'Bearer %s' % self._access_token
+            headers['Authorization'] = 'Ghost %s' % self._access_token
+
+        print(url)
 
         response = request(url, headers=headers, **kwargs)
+
+        #print(response.content)
 
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
