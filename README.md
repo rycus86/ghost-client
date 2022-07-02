@@ -30,7 +30,7 @@ ghost = Ghost.from_sqlite(
 # or to use a specific client ID and secret
 ghost = Ghost(
     'http://localhost:2368',
-    client_id='ghost-admin', client_secret='secret_key'
+    admin_key=='admin API key'
 )
 
 # log in

@@ -121,10 +121,6 @@ class Ghost(object):
         self._access_token = access_token
         self._admin_key = admin_key
 
-        self._username = None
-        self._password = None
-
-
         self.posts = PostController(self)
         self.tags = Controller(self, 'tags')
         self.users = Controller(self, 'users')
@@ -236,20 +232,6 @@ class Ghost(object):
 
         return token_str
 
-    def revoke_access_token(self):
-        """
-        Revoke the access token currently in use.
-        """
-
-        if not self._access_token:
-            return
-
-        self.execute_post('authentication/revoke', json=dict(
-            token_type_hint='access_token',
-            token=self._access_token
-        ))
-
-        self._access_token = None
 
 
 
