@@ -30,11 +30,9 @@ ghost = Ghost.from_sqlite(
 # or to use a specific client ID and secret
 ghost = Ghost(
     'http://localhost:2368',
-    client_id='ghost-admin', client_secret='secret_key'
+    admin_key=='admin API key'
 )
 
-# log in
-ghost.login('username', 'password')
 
 # print the server's version
 print(ghost.version)
@@ -88,8 +86,6 @@ ghost.upload(file_obj=open('sample.png', 'rb'))
 ghost.upload(file_path='/path/to/image.jpeg', 'rb')
 ghost.upload(name='image.gif', data=open('local.gif', 'rb').read())
 
-# log out
-ghost.logout()
 ```
 
 The logged in credentials will be saved in memory and on HTTP 401 errors the client will attempt to re-authenticate once automatically.

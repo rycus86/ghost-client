@@ -8,11 +8,6 @@ class SessionTest(GhostTestCase):
     def _setup_client(self):
         return self.new_client()
 
-    def test_login(self):
-        self.assertNotEqual(len(self.login()), 0)
-
-    def test_invalid_login(self):
-        self.assertRaises(GhostException, self.login, username='fake', password='fake')
 
     def test_no_client_id_or_secret(self):
         self.assertRaises(GhostException, Ghost, self.GHOST_BASE_URL, client_id=None, client_secret=None)
@@ -41,33 +36,6 @@ class SessionTest(GhostTestCase):
             self._posts_to_delete.remove(post.id)
             logged_in.logout()
 
-    def test_logout(self):
-        client = self.new_logged_in_client()
-
-        self.assertGreater(len(client.posts.list(status='all')), 0)
-
-        client.logout()
-
-        self.assertRaises(GhostException, client.posts.list, status='all')
-
-    def test_refresh_token(self):
-        client = self.new_logged_in_client()
-
-        self.assertGreater(len(client.posts.list(status='all')), 0)
-
-        client.revoke_access_token()
-
-        self.assertGreater(len(client.posts.list(status='all')), 0)
-
-    def test_reauthenticate(self):
-        client = self.new_logged_in_client()
-
-        self.assertGreater(len(client.posts.list(status='all')), 0)
-
-        client.revoke_refresh_token()
-        client.revoke_access_token()
-
-        self.assertGreater(len(client.posts.list(status='all')), 0)
 
     def test_version(self):
         client = self.new_client(version='auto')
